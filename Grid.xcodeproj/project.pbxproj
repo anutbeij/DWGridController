@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		43ECDB7917B94067004C0439 /* DWExampleGridViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 43ECDB7817B94067004C0439 /* DWExampleGridViewCell.m */; };
 		43F295D416D406C5009035BA /* DWExampleGridViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 43F295D316D406C5009035BA /* DWExampleGridViewController.m */; };
 		6B7C8565167B39BD007B7655 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6B7C8564167B39BD007B7655 /* UIKit.framework */; };
 		6B7C8567167B39BD007B7655 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6B7C8566167B39BD007B7655 /* Foundation.framework */; };
@@ -67,6 +68,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		43ECDB7717B94067004C0439 /* DWExampleGridViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DWExampleGridViewCell.h; sourceTree = "<group>"; };
+		43ECDB7817B94067004C0439 /* DWExampleGridViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DWExampleGridViewCell.m; sourceTree = "<group>"; };
 		43F295D216D406C4009035BA /* DWExampleGridViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DWExampleGridViewController.h; sourceTree = "<group>"; };
 		43F295D316D406C5009035BA /* DWExampleGridViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DWExampleGridViewController.m; sourceTree = "<group>"; };
 		6B7C8560167B39BD007B7655 /* Grid.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Grid.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -186,6 +189,8 @@
 				6B7C8574167B39BD007B7655 /* DWAppDelegate.m */,
 				43F295D216D406C4009035BA /* DWExampleGridViewController.h */,
 				43F295D316D406C5009035BA /* DWExampleGridViewController.m */,
+				43ECDB7717B94067004C0439 /* DWExampleGridViewCell.h */,
+				43ECDB7817B94067004C0439 /* DWExampleGridViewCell.m */,
 			);
 			path = Grid;
 			sourceTree = "<group>";
@@ -385,6 +390,7 @@
 				6B7C858A167B3A5A007B7655 /* DWGridView.m in Sources */,
 				6B7C858D167B3AB7007B7655 /* DWGridViewCell.m in Sources */,
 				43F295D416D406C5009035BA /* DWExampleGridViewController.m in Sources */,
+				43ECDB7917B94067004C0439 /* DWExampleGridViewCell.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

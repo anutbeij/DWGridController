@@ -300,6 +300,8 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column)
 {
     if(_lastTouchedPosition.row >= 0 && _lastTouchedPosition.column >= 0)
     {
+        [_easeThread cancel];
+        _easeThread = nil;
         [UIView animateWithDuration:.2 animations:^
         {
             [self reloadData];
@@ -351,11 +353,12 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column)
     
     if( fabsf(velocity.x) < columnWidth)
     {
+        NSLog(@"VELOCITY: %f", velocity.x);
         if (velocity.x < 0 )
         {
             velocity.x = -columnWidth;
         }
-        else
+        else 
         {
             velocity.x = columnWidth;
         }

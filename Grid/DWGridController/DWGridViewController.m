@@ -9,7 +9,6 @@
 #import "DWGridViewController.h"
 
 @interface DWGridViewController ()
--(NSMutableDictionary *)cellDictionaryAtPosition:(DWPosition)position;
 -(DWPosition)normalizePosition:(DWPosition)position inGridView:(DWGridView *)gridView;
 @end
 
@@ -43,7 +42,7 @@
 }
 
 -(void)viewDidAppear:(BOOL)animated{
-    [super viewWillAppear:animated];
+    [super viewDidAppear:animated];
     
     [_gridView reloadData];
 }
@@ -119,7 +118,7 @@
             toPosition.column += amount;
             toPosition = [gridView normalizePosition:toPosition];
         }while (toCell);
-
+        
     }
 }
 
@@ -147,7 +146,10 @@
     return [gridView normalizePosition:position];
 }
 
--(NSMutableDictionary *)cellDictionaryAtPosition:(DWPosition)position{
+#pragma mark - Public methods
+
+-(NSMutableDictionary *)cellDictionaryAtPosition:(DWPosition)position
+{
     position = [self normalizePosition:position inGridView:_gridView];
     for(NSMutableDictionary *cellDict in _cells){
         if([[cellDict objectForKey:@"Row"] intValue] == position.row){

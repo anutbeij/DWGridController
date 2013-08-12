@@ -13,4 +13,5 @@
 @property (nonatomic, retain) DWGridView *gridView;
 @property (nonatomic, retain) NSMutableArray *cells;
 
+-(NSMutableDictionary *)cellDictionaryAtPosition:(DWPosition)position;
 @end

@@ -298,7 +298,7 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column)
 
 -(void)tapGestureDetected:(UITapGestureRecognizer *)gesture
 {
-    if(_lastTouchedPosition.row > 0 && _lastTouchedPosition.column > 0)
+    if(_lastTouchedPosition.row >= 0 && _lastTouchedPosition.column >= 0)
     {
         [UIView animateWithDuration:.2 animations:^
         {

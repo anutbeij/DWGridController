@@ -8,7 +8,8 @@
 
 #import "DWGridView.h"
 
-@interface DWGridView ()
+@interface DWGridView ( Private )
+
 -(void)panGestureDetected:(UIGestureRecognizer *)gestureRecognizer;
 -(void)initCells;
 /**
@@ -21,6 +22,7 @@
  *  @return The tag
  */
 -(NSInteger)tagForPosition:(DWPosition)position;
+
 @end
 
 @implementation DWGridView
@@ -287,6 +289,7 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column)
 {
     UITouch *touch = [touches anyObject];
     DWPosition touchPosition = [self determinePositionAtPoint:[touch locationInView:self]];
+    
     if(touchPosition.row == _lastTouchedPosition.row || touchPosition.column == _lastTouchedPosition.column)
     {
         [_easeThread cancel];
@@ -295,6 +298,17 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column)
 
 -(void)tapGestureDetected:(UITapGestureRecognizer *)gesture
 {
+    if(_lastTouchedPosition.row > 0 && _lastTouchedPosition.column > 0)
+    {
+        [UIView animateWithDuration:.2 animations:^
+        {
+            [self reloadData];
+        } completion:^(BOOL finished)
+         {
+             _lastTouchedPosition = DWPositionMake(-55, -55);
+         }];
+    }
+    
     if([self.delegate respondsToSelector:@selector(gridView:didSelectCell:atPosition:)])
     {
         DWPosition touchPosition = [self determinePositionAtPoint:[gesture locationInView:self]];
@@ -304,6 +318,7 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column)
             [self.delegate gridView:self didSelectCell:cell atPosition:touchPosition];
         }
     }
+    
 }
 
 #pragma mark - movement

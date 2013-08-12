@@ -24,6 +24,7 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column);
 -(BOOL)gridView:(DWGridView *)gridView shouldScrollCell:(DWGridViewCell *)cell atPosition:(DWPosition)position;
 -(void)gridView:(DWGridView *)gridView willMoveCell:(DWGridViewCell *)cell fromPosition:(DWPosition)fromPosition toPosition:(DWPosition)toPosition;
 -(void)gridView:(DWGridView *)gridView didMoveCell:(DWGridViewCell *)cell fromPosition:(DWPosition)fromPosition toPosition:(DWPosition)toPosition;
+-(void)gridView:(DWGridView *)gridView didSelectCell:(DWGridViewCell *)cell atPosition:(DWPosition)position;
 @end
 
 @protocol DWGridViewDataSource <NSObject>
@@ -35,7 +36,8 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column);
 -(NSInteger)numberOfVisibleColumnsInGridView:(DWGridView *)gridView;
 @end
 
-@interface DWGridView : UIView <UIGestureRecognizerDelegate>{
+@interface DWGridView : UIView <UIGestureRecognizerDelegate>
+{
     NSInteger _numberOfRowsInGrid;
     NSInteger _numberOfColumnsInGrid;
     
@@ -50,6 +52,7 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column);
     NSTimer *_easeOutTimer;
     
     NSThread *_easeThread;
+    DWPosition _lastTouchedPosition;
 }
 
 @property (nonatomic,assign) id<DWGridViewDataSource>dataSource;

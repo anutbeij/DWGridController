@@ -35,10 +35,16 @@ static const NSInteger outerOffset = 1;
     self = [super initWithFrame:frame];
     if (self)
     {
+        //set touch position to something non-existant
+        _lastTouchedPosition = DWPositionMake(-1337, -1337);
+        
         //self can't have tag 0 because there is a tile with tag 0 which will conflict when moving
         self.tag = 1337;
         _panRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panGestureDetected:)];
         [self addGestureRecognizer:_panRecognizer];
+        
+        UITapGestureRecognizer *tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapGestureDetected:)];
+        [self addGestureRecognizer:tapRecognizer];
     }
     return self;
 }
@@ -53,7 +59,7 @@ static const NSInteger outerOffset = 1;
     //fetch total grid size
     _numberOfRowsInGrid = [self.dataSource numberOfRowsInGridView:self];
     _numberOfColumnsInGrid = [self.dataSource numberOfColumnsInGridView:self];
-   
+    
     //fetch the visible grid size
     if([self.dataSource respondsToSelector:@selector(numberOfVisibleRowsInGridView:)])
         _numberOfVisibleRowsInGrid = [self.dataSource numberOfVisibleRowsInGridView:self];
@@ -71,7 +77,7 @@ static const NSInteger outerOffset = 1;
 -(void)initCells
 {
     //remove all subviews
-    //[self.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
+    // [self.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
     
     //fetch the bounds, will be used to position the cells
     CGRect myFrame = self.bounds;
@@ -82,6 +88,12 @@ static const NSInteger outerOffset = 1;
         //loop through the columns with 2 left and 2 right of the screen
         for(int column = -outerOffset; column < _numberOfVisibleColumnsInGrid+outerOffset; column++)
         {
+            //Skip items that can't be reached
+            if([self shouldSkipItemAtRow:row column:column])
+            {
+                continue;
+            }
+            
             //fetch the cell for the current position
             DWPosition cellPosition = DWPositionMake(row, column);
             DWGridViewCell *cell = [self.delegate gridView:self cellAtPosition:cellPosition];
@@ -94,9 +106,12 @@ static const NSInteger outerOffset = 1;
             cellFrame.origin.x = column * cellFrame.size.width;
             cellFrame.origin.y = row * cellFrame.size.height;
             cell.frame = cellFrame;
-            //add the cell to the grid view
-            [self addSubview:cell];
             
+            //add the cell to the grid view
+            if(![self.subviews containsObject:cell])
+            {
+                [self addSubview:cell];
+            }
             //if the cell is on screen bring it to the front
             if(row >= 0 && row < _numberOfVisibleRowsInGrid && column >= 0 && column < _numberOfVisibleColumnsInGrid)
             {
@@ -111,6 +126,32 @@ static const NSInteger outerOffset = 1;
     }
 }
 
+-(BOOL)shouldSkipItemAtRow:(int)row column:(int)column
+{
+    BOOL skip = NO;
+    if(row < 0 && column < 0)
+    {
+        skip = YES;
+    }
+    
+    if(row < 0 && column >= _numberOfVisibleColumnsInGrid)
+    {
+        skip = YES;
+    }
+    
+    if(row >= _numberOfVisibleRowsInGrid && column < 0)
+    {
+        skip = YES;
+    }
+    
+    if(row >= _numberOfVisibleRowsInGrid && column >= _numberOfVisibleColumnsInGrid)
+    {
+        skip = YES;
+    }
+    
+    return skip;
+}
+
 -(NSInteger)tagForPosition:(DWPosition)position
 {
     NSInteger tag = position.row * _numberOfColumnsInGrid + position.column;
@@ -123,22 +164,15 @@ static const NSInteger outerOffset = 1;
     return tag;
 }
 
-/*
-// Only override drawRect: if you perform custom drawing.
-// An empty implementation adversely affects performance during animation.
-- (void)drawRect:(CGRect)rect
-{
-    // Drawing code
-}
-*/
-
 #pragma mark - DWPosition
 
-static inline DWPosition DWPositionMake(NSInteger row, NSInteger column) {
+static inline DWPosition DWPositionMake(NSInteger row, NSInteger column)
+{
     return (DWPosition) {row, column};
 }
 
--(DWPosition)determinePositionAtPoint:(CGPoint)point{
+-(DWPosition)determinePositionAtPoint:(CGPoint)point
+{
     DWPosition position;
     CGFloat height = self.bounds.size.height;
     CGFloat posY = point.y;
@@ -153,17 +187,22 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column) {
     return position;
 }
 
--(DWPosition)normalizePosition:(DWPosition)position{
+-(DWPosition)normalizePosition:(DWPosition)position
+{
     
-    if(position.row < 0){
+    if(position.row < 0)
+    {
         position.row += _numberOfRowsInGrid;
-    }else if(position.row >= _numberOfRowsInGrid){
+    }else if(position.row >= _numberOfRowsInGrid)
+    {
         position.row -= _numberOfRowsInGrid;
     }
     
-    if(position.column < 0){
+    if(position.column < 0)
+    {
         position.column += _numberOfColumnsInGrid;
-    }else if(position.column >= _numberOfColumnsInGrid){
+    }else if(position.column >= _numberOfColumnsInGrid)
+    {
         position.column -= _numberOfColumnsInGrid;
     }
     
@@ -172,25 +211,41 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column) {
 
 #pragma mark - Gestures
 
--(void)panGestureDetected:(UIPanGestureRecognizer *)gestureRecognizer{
+-(void)panGestureDetected:(UIPanGestureRecognizer *)gestureRecognizer
+{
     CGPoint velocity = [gestureRecognizer velocityInView:self];
-
+    
 	if (gestureRecognizer.state == UIGestureRecognizerStateBegan)
     {
-        if(_easeOutTimer){
+        if(_easeOutTimer)
+        {
             [_easeOutTimer invalidate];
             //[_easeOutTimer finalize];
             _easeOutTimer = nil;
         }
         
-        if(_easeThread){
+        if(_easeThread)
+        {
             [_easeThread cancel];
             _easeThread = nil;
         }
-
-        [self reloadData];
-        _isMovingHorizontally = NO;
-        _isMovingVertically = NO;
+        
+        DWPosition touchPosition = [self determinePositionAtPoint:[gestureRecognizer locationInView:self]];
+        
+        BOOL shouldReload = NO;
+        shouldReload = _lastTouchedPosition.row < 0;
+        shouldReload = shouldReload ? shouldReload : (_lastTouchedPosition.row != touchPosition.row && _isMovingHorizontally);
+        shouldReload = shouldReload ? shouldReload : (fabsf(velocity.y) > fabsf(velocity.x) && _isMovingHorizontally);
+        shouldReload = shouldReload ? shouldReload : (_lastTouchedPosition.column != touchPosition.column && _isMovingVertically);
+        shouldReload = shouldReload ? shouldReload : (fabsf(velocity.x) > fabsf(velocity.y) && _isMovingVertically);
+        
+        if(shouldReload)
+        {
+            _lastTouchedPosition = touchPosition;
+            [self reloadData];
+            _isMovingHorizontally = NO;
+            _isMovingVertically = NO;
+        }
 	}
     else if (gestureRecognizer.state == UIGestureRecognizerStateChanged)
     {
@@ -198,7 +253,7 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column) {
         if(fabsf(velocity.x) > fabsf(velocity.y) && !_isMovingVertically)
         {
             _isMovingHorizontally = YES;
-            DWPosition touchPosition = [self determinePositionAtPoint:[gestureRecognizer locationInView:self]];
+            DWPosition touchPosition = _lastTouchedPosition;//[self determinePositionAtPoint:[gestureRecognizer locationInView:self]];
             CGPoint translation = [gestureRecognizer translationInView:self];
             [self moveCellAtPosition:touchPosition horizontallyBy:velocity.x withTranslation:translation reloadingData:YES];
             [gestureRecognizer setTranslation:CGPointZero inView:self];
@@ -208,7 +263,7 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column) {
         else if(!_isMovingHorizontally)
         {
             _isMovingVertically = YES;
-            DWPosition touchPosition = [self determinePositionAtPoint:[gestureRecognizer locationInView:self]];
+            DWPosition touchPosition = _lastTouchedPosition;//[self determinePositionAtPoint:[gestureRecognizer locationInView:self]];
             CGPoint translation = [gestureRecognizer translationInView:self];
             [self moveCellAtPosition:touchPosition verticallyBy:velocity.y withTranslation:translation reloadingData:YES];
             [gestureRecognizer setTranslation:CGPointZero inView:self];
@@ -216,7 +271,7 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column) {
 	}
     else if (gestureRecognizer.state == UIGestureRecognizerStateEnded)
     {
-        DWPosition touchPosition = [self determinePositionAtPoint:[gestureRecognizer locationInView:self]];
+        DWPosition touchPosition = _lastTouchedPosition;//[self determinePositionAtPoint:[gestureRecognizer locationInView:self]];
         
         NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
         [dict setObject:[NSNumber numberWithFloat:velocity.x] forKey:@"VelocityX"];
@@ -225,8 +280,33 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column) {
         [dict setObject:[NSNumber numberWithFloat:touchPosition.column] forKey:@"TouchColumn"];
         _easeOutTimer = [NSTimer scheduledTimerWithTimeInterval:0.0 target:self selector:@selector(easeOut:) userInfo:dict repeats:NO];
     }
-
+    
 }
+
+-(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
+{
+    UITouch *touch = [touches anyObject];
+    DWPosition touchPosition = [self determinePositionAtPoint:[touch locationInView:self]];
+    if(touchPosition.row == _lastTouchedPosition.row || touchPosition.column == _lastTouchedPosition.column)
+    {
+        [_easeThread cancel];
+    }
+}
+
+-(void)tapGestureDetected:(UITapGestureRecognizer *)gesture
+{
+    if([self.delegate respondsToSelector:@selector(gridView:didSelectCell:atPosition:)])
+    {
+        DWPosition touchPosition = [self determinePositionAtPoint:[gesture locationInView:self]];
+        if(touchPosition.row != _lastTouchedPosition.row && touchPosition.column != _lastTouchedPosition.column)
+        {
+            DWGridViewCell *cell = [self.delegate gridView:self cellAtPosition:touchPosition];
+            [self.delegate gridView:self didSelectCell:cell atPosition:touchPosition];
+        }
+    }
+}
+
+#pragma mark - movement
 
 -(void)moveCellSelector:(NSDictionary *)params
 {
@@ -335,17 +415,17 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column) {
                     break;
                 }
             }
-           
+            
             direction = (velocity.x - i) / stepSize;
             NSDictionary *dict = [NSDictionary dictionaryWithObjectsAndKeys:
-                              [NSNumber numberWithFloat:velocity.x], @"velocity",
-                              [NSNumber numberWithBool:YES], @"reloadingData",
-                              [NSNumber numberWithFloat:direction], @"translationX",
-                              [NSNumber numberWithFloat:0], @"translationY",
-                              [NSNumber numberWithBool:YES], @"isMovingHorizontally",
-                              [NSNumber numberWithInt:touchPosition.row], @"positionX",
-                              [NSNumber numberWithInt:touchPosition.column], @"positionY",
-                              nil];
+                                  [NSNumber numberWithFloat:velocity.x], @"velocity",
+                                  [NSNumber numberWithBool:YES], @"reloadingData",
+                                  [NSNumber numberWithFloat:direction], @"translationX",
+                                  [NSNumber numberWithFloat:0], @"translationY",
+                                  [NSNumber numberWithBool:YES], @"isMovingHorizontally",
+                                  [NSNumber numberWithInt:touchPosition.row], @"positionX",
+                                  [NSNumber numberWithInt:touchPosition.column], @"positionY",
+                                  nil];
             
             [self performSelectorOnMainThread:@selector(moveCellSelector:) withObject:dict waitUntilDone:YES];
             [NSThread sleepForTimeInterval:0.001];
@@ -354,6 +434,7 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column) {
     
     if(![[NSThread currentThread] isCancelled])
     {
+        _lastTouchedPosition = DWPositionMake(-55, -55);
         [self performSelectorOnMainThread:@selector(reloadData) withObject:nil waitUntilDone:NO];
     }
 }
@@ -459,12 +540,13 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column) {
                                   nil];
             [self performSelectorOnMainThread:@selector(moveCellSelector:) withObject:dict waitUntilDone:YES];
             [NSThread sleepForTimeInterval:0.001];
-                 
+            
         }
     }
     
     if(![[NSThread currentThread] isCancelled])
     {
+        _lastTouchedPosition = DWPositionMake(-55, -55);
         [self performSelectorOnMainThread:@selector(reloadData) withObject:nil waitUntilDone:NO];
     }
 }
@@ -484,10 +566,12 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column) {
     _easeOutTimer = nil;
 }
 
--(void)moveCellAtPosition:(DWPosition)position horizontallyBy:(CGFloat)velocity withTranslation:(CGPoint)translation reloadingData:(BOOL)shouldReload{
-    for(int i = -outerOffset; i< _numberOfVisibleColumnsInGrid+outerOffset; i++){
+-(void)moveCellAtPosition:(DWPosition)position horizontallyBy:(CGFloat)velocity withTranslation:(CGPoint)translation reloadingData:(BOOL)shouldReload
+{
+    for(int i = -outerOffset; i< _numberOfVisibleColumnsInGrid+outerOffset; i++)
+    {
         UIView *cell = [self viewWithTag:[self tagForPosition:DWPositionMake(position.row, i)]];
-
+        
         CGPoint center = cell.center;
         center.x += translation.x;
         cell.center = center;
@@ -497,21 +581,28 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column) {
     CGFloat width = self.bounds.size.width;
     CGFloat columnWidth = width / _numberOfVisibleColumnsInGrid;
     CGFloat posX = cell.frame.origin.x;
-    if(posX >= columnWidth){
+    if(posX >= columnWidth)
+    {
         [self.delegate gridView:self didMoveCell:[self.delegate gridView:self cellAtPosition:position] fromPosition:position toPosition:DWPositionMake(position.row, position.column +1)];
-        if(shouldReload){
+        if(shouldReload)
+        {
             [self reloadData];
         }
-    }else if(posX <= 0-columnWidth){
+    }
+    else if(posX <= 0-columnWidth)
+    {
         [self.delegate gridView:self didMoveCell:[self.delegate gridView:self cellAtPosition:position] fromPosition:position toPosition:DWPositionMake(position.row, position.column -1)];
-        if(shouldReload){
+        if(shouldReload)
+        {
             [self reloadData];
         }
     }
 }
 
--(void)moveCellAtPosition:(DWPosition)position verticallyBy:(CGFloat)velocity withTranslation:(CGPoint)translation reloadingData:(BOOL)shouldReload{
-    for(int i = -outerOffset; i< _numberOfVisibleRowsInGrid+outerOffset; i++){
+-(void)moveCellAtPosition:(DWPosition)position verticallyBy:(CGFloat)velocity withTranslation:(CGPoint)translation reloadingData:(BOOL)shouldReload
+{
+    for(int i = -outerOffset; i< _numberOfVisibleRowsInGrid+outerOffset; i++)
+    {
         UIView *cell = [self viewWithTag:[self tagForPosition:DWPositionMake(i, position.column)]];
         CGPoint center = cell.center;
         center.y += translation.y;
@@ -522,14 +613,18 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column) {
     CGFloat height = self.bounds.size.height;
     CGFloat rowHeight = height / _numberOfVisibleRowsInGrid;
     CGFloat posY = cell.frame.origin.y;
-    if(posY >= rowHeight){
+    if(posY >= rowHeight)
+    {
         [self.delegate gridView:self didMoveCell:[self.delegate gridView:self cellAtPosition:position] fromPosition:position toPosition:DWPositionMake(position.row +1, position.column)];
-        if(shouldReload){
+        if(shouldReload)
+        {
             [self reloadData];
         }
-    }else if(posY <= 0-rowHeight){
+    }else if(posY <= 0-rowHeight)
+    {
         [self.delegate gridView:self didMoveCell:[self.delegate gridView:self cellAtPosition:position] fromPosition:position toPosition:DWPositionMake(position.row -1, position.column)];
-        if(shouldReload){
+        if(shouldReload)
+        {
             [self reloadData];
         }
     }

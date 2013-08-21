@@ -60,5 +60,6 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column);
 
 -(void)reloadData;
 -(DWPosition)normalizePosition:(DWPosition)position;
+-(NSArray *)visibleCells;
 @end
 

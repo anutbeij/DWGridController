@@ -353,7 +353,6 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column)
     
     if( fabsf(velocity.x) < columnWidth)
     {
-        NSLog(@"VELOCITY: %f", velocity.x);
         if (velocity.x < 0 )
         {
             velocity.x = -columnWidth;
@@ -646,5 +645,18 @@ static inline DWPosition DWPositionMake(NSInteger row, NSInteger column)
             [self reloadData];
         }
     }
+}
+
+-(NSArray *)visibleCells
+{
+    NSMutableArray *visibleCells = [[NSMutableArray alloc] init];
+    for(UIView *v in self.subviews)
+    {
+        if([v isKindOfClass:[DWGridViewCell class]] && CGRectIntersectsRect(v.frame, self.bounds))
+        {
+            [visibleCells addObject:v];
+        }
+    }
+    return [NSArray arrayWithArray:visibleCells];
 }
 @end

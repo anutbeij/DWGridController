@@ -35,6 +35,9 @@
                 [dict setObject:cell forKey:@"Cell"];
                 [dict setObject:[NSNumber numberWithInt:row] forKey:@"Row"];
                 [dict setObject:[NSNumber numberWithInt:col] forKey:@"Column"];
+
+                if(image)
+                    [dict setObject:image forKey:@"Image"];
                 [self.cells addObject:dict];
                 
             }
@@ -69,7 +72,8 @@
 #pragma mark - GridView delegate
 -(void)gridView:(DWGridView *)gridView didSelectCell:(DWGridViewCell *)cell atPosition:(DWPosition)position
 {
-    UIImage *image = [UIImage imageNamed:[NSString stringWithFormat:@"%d-%d.jpeg",position.row,position.column]];
+    NSDictionary *cellDictionary = [self cellDictionaryAtPosition:position];
+    UIImage *image = [cellDictionary objectForKey:@"Image"];
     
     UIButton *button = [[UIButton alloc] init];
     button.translatesAutoresizingMaskIntoConstraints = NO;
